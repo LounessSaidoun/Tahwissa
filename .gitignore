@@ -9,6 +9,7 @@ package.json
 #ignore the utils directory
 utils/
 dbConfig/
+models/
 views/partials
 # Logs
 logs
