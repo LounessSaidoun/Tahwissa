@@ -1,7 +1,7 @@
 import mongoose  from "mongoose";
 import Verification from "../models/emailVerificationModel.js";
 import Users from "../models/userModel.js";
-import { compareString, hashString } from "../utils/index.js";
+import { compareString, hashString, verifyJwtToken } from "../utils/index.js";
 import PasswordReset from "../models/passwordResetModel.js";
 import { resetPasswordLink } from "../utils/sendEmail.js";
 
@@ -149,7 +149,7 @@ export const resetPassword = async (req,res) =>{
     }
 }
 
-export const changePassword = async (req,res) =>{
+export const changePassword = async (req,res,next) =>{
     try{
         const {userId, password} = req.body;
         const hashedPassword = await hashString(password);
@@ -172,3 +172,82 @@ export const changePassword = async (req,res) =>{
     }
 }
 
+export const addIntrests = async (req,res) =>{
+    try{
+        const token = req.headers.authorization;
+        const decodedPayload = verifyJwtToken(token, process.env.JWT_SECRET_KEY);
+        if(decodedPayload){
+            const userId = decodedPayload.userId;
+            const user = await Users.findById({_id:userId});
+            const interests = req.body.interests;
+            if(interests && interests.length>0){
+                const updatedUser = await Users.findOneAndUpdate({_id:user?._id},{$set:{center_of_interest:interests,  interest_checked:true}},{new:true})
+                if(updatedUser){
+                    res.status(201).json({ 
+                        message: "Le centre d'intérêt a été mis à jour avec succès.",
+                        center_of_interests: updatedUser.center_of_interest
+                
+                })
+                    return;
+                }
+                else{
+                    res.status(500).json({ message: "Une erreur s'est produite lors de la mise à jour du centre d'intérêt. Veuillez réessayer plus tard." });
+                    return;
+                }
+            }
+        }
+        else{
+            res.status(401).json({ message: "Accès non autorisé. Veuillez vous authentifier pour Choisir vos centres d'intérêt." });
+        }
+    }
+    catch(error){
+        console.log(error)
+        res.status(404).json({message:error.message})
+    }
+}
+
+export const removeInterest = async (req,res)=>{
+    try{
+        const token = req.headers.authorization;
+        const decodedPayload = verifyJwtToken(token, process.env.JWT_SECRET_KEY);
+        if(decodedPayload){
+            const userId = decodedPayload.userId;
+            const user = await Users.findById({_id:userId});
+            const interest = req.query.interest;
+            if(interest){
+                const index = user.center_of_interest.findIndex((x)=>x===interest);
+                if(index!=-1){
+                    user.center_of_interest= user.center_of_interest.slice(0,index).concat(user.center_of_interest.slice(index+1));
+                    const updatedUser = await Users.findByIdAndUpdate({_id:userId},{$set:{center_of_interest:user.center_of_interest}}, { new: true })
+                    if(updatedUser){
+                        res.status(201).json({ 
+                            message: "Le centre d'intérêt a été mis à jour avec succès." ,
+                            center_of_interests:updatedUser.center_of_interest
+                            
+                        });
+                        return;
+                    }
+                    else{
+                        res.status(500).json({ 
+                            message: "Une erreur s'est produite lors de la mise à jour du centre d'intérêt. Veuillez réessayer plus tard."
+                            
+                        });
+
+                }
+                }
+            }
+
+            }
+            else{
+                    res.status(401).json({ message: "Une erreur s'est produite lors de la mise à jour du centre d'intérêt. Veuillez réessayer plus tard."});
+                    return;
+            }
+
+
+
+    }catch(error){
+        console.log(error);
+        res.status(404).res({message:error.message});
+        
+    }
+}
