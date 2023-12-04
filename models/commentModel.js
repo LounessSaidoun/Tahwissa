@@ -12,7 +12,8 @@ const commentSchema = new mongoose.Schema({
     },
     post_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Post', // Reference to the Post model
+      ref: 'Post',
+      required: true, // Reference to the Post model
     },
     
   },

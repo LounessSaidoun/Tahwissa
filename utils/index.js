@@ -32,3 +32,44 @@ export function verifyJwtToken(token, secretKey) {
         return null;
     }
   }
+
+// export function authorizeUser(req, res, next) {
+//     const token = req.header('Authorization');
+  
+//     if (!token) {
+//       return res.status(401).json({ message: 'Authorization token is missing' });
+//     }
+  
+//     try {
+//       const decoded = verifyJwtToken(token, process.env.JWT_SECRET_KEY);
+//       if (!decoded) {
+//         return res.status(401).json({ message: 'Invalid token' });
+//       }
+//       req.user = decoded;
+//       next();
+//     } catch (error) {
+//       console.error(error);
+//       res.status(401).json({ message: 'Invalid token' });
+//     }
+//  }
+export function authorizeUser(req, res, next) {
+  const token = req.header('Authorization');
+
+  if (!token) {
+    return res.status(401).json({ message: 'Authorization token is missing' });
+  }
+
+  try {
+    const decoded = verifyJwtToken(token, process.env.JWT_SECRET_KEY);
+    if (!decoded) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    console.log('Decoded User:', decoded);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error(error);
+    res.status(401).json({ message: 'Invalid token' });
+  }
+}
+

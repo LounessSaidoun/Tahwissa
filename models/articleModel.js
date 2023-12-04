@@ -23,10 +23,17 @@ const articleSchema = new mongoose.Schema(
             ref: 'Place', // Reference to the Place model
             required: true,
           },
+          type: {
+            type: String,
+            required: true,
+            enum: ['art', 'restaurant', 'place'],
+          },
           likes: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User', // Reference to the User model
           }],
+          photos: [String],
+
     }
 )
 const Articles = mongoose.model("Article",articleSchema);

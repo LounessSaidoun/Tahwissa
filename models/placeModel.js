@@ -24,12 +24,6 @@ const placeSchema = new mongoose.Schema(
           },
           tags: [String],
           photos: [String],  // Store photo URLs directly as an array of strings.
-          liked_by_users: [
-            {
-              type: mongoose.Schema.Types.ObjectId,
-              ref: 'User',
-            },
-          ],
           profil_picture: String,
           profil_url: String,
           album: [String]
