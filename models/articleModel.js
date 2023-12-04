@@ -33,6 +33,8 @@ const articleSchema = new mongoose.Schema(
             ref: 'User', // Reference to the User model
           }],
           photos: [String],
+          tags: [String],
+
 
     }
 )

@@ -23,10 +23,7 @@ const placeSchema = new mongoose.Schema(
             enum: ['est', 'ouest', 'nord', 'sud'],
           },
           tags: [String],
-          photos: [String],  // Store photo URLs directly as an array of strings.
-          profil_picture: String,
-          profil_url: String,
-          album: [String]
+
     },
     
 )
