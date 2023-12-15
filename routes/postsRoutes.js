@@ -6,7 +6,8 @@ import {
      deletePost,
      getPostDetails ,
      likePost,
-     addComment
+     addComment,
+     deleteComment
     } from "../controllers/postsController.js";
 import userAuth from '../middleware/authmiddleware.js'
 import multer from 'multer';
@@ -29,6 +30,9 @@ router.get('/:post_id/details',getPostDetails)
 router.post("/like/:id" , userAuth ,likePost);
 //to add a comment
 router.post('/comment/:post_id', userAuth , addComment)
+
+//to delete a comment 
+router.delete('/delete-comment/:commentId',userAuth,deleteComment)
 
 // userAuth, upload.array('photos', 3),
 export default router ;     

@@ -373,6 +373,43 @@ const addComment = async (req, res) => {
   }
 };
 
+const deleteComment = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const commentId = req.params.commentId;
+    const postId = req.body.postId;
+
+    if (user_id) {
+      // Check if the comment exists
+      const commentExists = await Comments.exists({ _id: commentId });
+
+      if (!commentExists) {
+        res.status(404).json({ error: "Comment not found" });
+        return; // Stop execution if the comment doesn't exist
+      }
+
+      // Use Mongoose to update the post and pull the comment ObjectId from the array
+      const updatedPost = await Posts.findOneAndUpdate(
+        { _id: postId },
+        { $pull: { comments: commentId } },
+        { new: true }
+      );
+
+      if (!updatedPost) {
+        res.status(404).json({ error: "Post not found" });
+      } else {
+        // Successfully removed the comment reference from the array
+        await Comments.deleteOne({ _id: commentId });
+        res.status(200).json({ message: "Comment deleted successfully", post: updatedPost });
+      }
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 
 
@@ -384,5 +421,6 @@ export {
   getUserPosts ,
   getPostDetails,
   likePost,
-  addComment
+  addComment,
+  deleteComment 
 };
