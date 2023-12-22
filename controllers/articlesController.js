@@ -71,7 +71,7 @@ const addArticle = async (req, res) => {
         return res.status(400).json({ error: 'No files provided or invalid files format' });
       }
   
-      const  {title , content,author_name,place_id,type,likes} = req.body;
+      const  {title , content,author_name,place_id,type,tags , likes} = req.body;
   
       const imageUrls = await Promise.all(
         files.map(async (file) => {
@@ -99,6 +99,7 @@ const addArticle = async (req, res) => {
           return url.replace(`uploads/${filename}`, newPath);
         }),
         likes: likes,
+        tags:tags,
       };
   
       const savedArticle = await new Articles(newArticle).save();

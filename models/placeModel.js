@@ -22,7 +22,6 @@ const placeSchema = new mongoose.Schema(
             type: String,
             enum: ['est', 'ouest', 'nord', 'sud'],
           },
-          tags: [String],
 
     },
     
