@@ -10,10 +10,10 @@ import dotenv from "dotenv"
 
 
 export const register = async (req,res,next)=>{
-    const {userName,firstName,lastName,email,password} = req.body
+    const {userName,firstName,lastName,email,password,birthDate} = req.body
 
 
-    if(!(userName || firstName || lastName || email || password )){ //we have to add the birthDay so we can calculate age dynamicly
+    if(!(userName || firstName || lastName || email || password || birthDate )){ //we have to add the birthDay so we can calculate age dynamicly
         next("veuillez remplir les champs indiqué!");
         return;
     }
@@ -31,7 +31,8 @@ export const register = async (req,res,next)=>{
             lastName,
             email,
             password: hashedPassword,
-            registrationYear
+            registrationYear,
+            birthDate,
         })
         sendVerificationEmail(user, res);
      }
