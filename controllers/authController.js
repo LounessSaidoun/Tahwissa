@@ -3,7 +3,7 @@ import { compareString, createJWT, hashString } from "../utils/index.js";
 import { sendVerificationEmail } from "../utils/sendEmail.js";
 import Posts from "../models/postModel.js";
 import Notifications from "../models/notificationModel.js"
-// import places from "../models/placeModel.js"
+import places from "../models/placeModel.js"
 
 import dotenv from "dotenv"
 

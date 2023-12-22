@@ -4,6 +4,24 @@ import { compareString, hashString} from "../utils/index.js";
 import PasswordReset from "../models/passwordResetModel.js";
 import { resetPasswordLink } from "../utils/sendEmail.js";
 import Posts from "../models/postModel.js";
+import aws from 'aws-sdk';
+
+const S3 = aws.S3; // Corrected import
+const s3 = new S3();
+
+// Set up AWS SDK with your credentials
+aws.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+});
+
+
+import multer from 'multer';
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
+
+
 
 export const verifyEmail = async (req,res)=>{
     const {userId,token} = req.params;
@@ -259,6 +277,20 @@ export const updateProfilInformations = async (req,res) =>{
     try{
         const {user_id:userId}=req.user;
         const user = await Users.findById(userId)
+        let profil_picture = user.profil_picture; // Default to existing picture
+        if (req.file) {
+          // A new file is uploaded
+          const params = {
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: `profile-pictures/${userId}-${Date.now()}-${req.file.originalname}`,
+            Body: req.file.buffer,
+            ContentType: req.file.mimetype,
+          };
+    
+          const s3Response = await s3.upload(params).promise();
+          profil_picture = s3Response.Location;
+        }
+    
         if(user){
             console.log(user.userName)
             const updatedProfile={
@@ -271,7 +303,8 @@ export const updateProfilInformations = async (req,res) =>{
                 Ouilaya: req.body.Ouilaya !== undefined ? req.body.Ouilaya : user.Ouilaya,
                 aProposDeMoi: req.body.aProposDeMoi !== undefined ? req.body.aProposDeMoi : user.aProposDeMoi,
                 interests:  req.body.interests !== undefined ? req.body.interests : user.interests,
-                languages: req.body.languages !== undefined ? req.body.languages : user.languages 
+                languages: req.body.languages !== undefined ? req.body.languages : user.languages ,
+                profil_picture,
                 }
                 await Users.updateOne({ _id: updatedProfile._id }, { $set: updatedProfile})
                 .then(()=>{
@@ -302,9 +335,19 @@ export const getProfilInfo = async (req,res)=>{
             path: "friends",
             select: "_id userName profilUrl profil_picture"
         });
+       
         if(user){
             const posts = await Posts.find({user_id:userId})
             const sortedPosts = posts.sort((a, b) => b.likes.length - a.likes.length);
+            let profilePicture = null;
+
+            if (user.profile_picture) {
+              profilePicture = await s3.getSignedUrlPromise("getObject", {
+                Bucket: process.env.AWS_S3_BUCKET_NAME,
+                Key: user.profile_picture,
+                Expires: 3600,
+              });
+            }
             const userInfo = {
                     id: user._id, 
                     userName: user.userName,
@@ -321,7 +364,8 @@ export const getProfilInfo = async (req,res)=>{
                     Ouilaya: user.Ouilaya,
                     aProposDeMoi: user.aProposDeMoi,
                     friends:user.friends,
-                    sortedPosts:sortedPosts
+                    sortedPosts:sortedPosts,
+                    profil_picture:profilePicture
                 }
                 res.status(200).json(userInfo);
             }

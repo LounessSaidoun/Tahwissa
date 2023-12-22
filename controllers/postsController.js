@@ -3,10 +3,6 @@ import Comments from '../models/commentModel.js';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import aws from 'aws-sdk';
-import Notifications from "../models/notificationModel.js";
-import {io} from "../index.js"
-import Users from '../models/userModel.js';
-
 dotenv.config()
 
 const S3 = aws.S3; // Corrected import
@@ -90,7 +86,8 @@ const createPost = async (req, res) => {
   
   const updatePost = async (req, res) => {
     try {
-      const postId = req.params.id; // Assuming you have the post ID in the request parameters
+      const { user_id } = req.user;
+      const postId = req.params.id; 
       const files = req.files;
       const existingPost = await Posts.findById(postId);
       
@@ -102,14 +99,13 @@ const createPost = async (req, res) => {
       existingPost.content = req.body.content || existingPost.content;
       existingPost.likes = req.body.likes || existingPost.likes;
       // const user = decodeURIComponent(req.body.user_name);
-      const user = req.body.user_name.toString();
-      console.log(user);
+
       if (files && Array.isArray(files)) {
         const imageUrls = await Promise.all(
           files.map(async (file) => {
             const params = {
               Bucket: process.env.AWS_S3_BUCKET_NAME,
-              Key: `uploads/${user}/${existingPost._id}/${Date.now()}-${file.originalname}`,
+              Key: `uploads/${user_id}/${existingPost._id}/${Date.now()}-${file.originalname}`,
               Body: file.buffer,
               ContentType: file.mimetype,
             };
@@ -133,6 +129,7 @@ const createPost = async (req, res) => {
 
 const deletePost = async (req, res) => {
   try {
+    const { user_id } = req.user;
     const postId = req.params.id;
     const deletedPost = await Posts.findByIdAndDelete(postId);
 
@@ -168,12 +165,15 @@ const deletePost = async (req, res) => {
 //works
 const getUserPosts = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // here if we get the id from the param
+    
+    // const { id } = req.user;  // here if we get the id from the auth
+
+
 
     // Find posts for the user by user_id
     const posts = await Posts.find({ user_id: id }).sort({ createdAt: 1 });
 
-    // Map over the posts and directly retrieve signed URLs for photos
     const postsWithSignedUrls = await Promise.all(
       posts.map(async (post) => {
         const photosWithSignedUrls = await Promise.all(
@@ -181,14 +181,13 @@ const getUserPosts = async (req, res, next) => {
             const signedUrl = await s3.getSignedUrlPromise('getObject', {
               Bucket: process.env.AWS_S3_BUCKET_NAME,
               Key: photo,
-              Expires: 3600, // Set the expiration time for the signed URL
+              Expires: 3600, 
             });
 
             return signedUrl;
           })
         );
 
-        // Add the signed URLs to the post
         post.signedPhotoUrls = photosWithSignedUrls;
 
         return post;
@@ -212,7 +211,7 @@ const getPostDetails = async (req, res, next) => {
     const { post_id } = req.params;
     console.log(post_id);
 
-    // Find the post by post ID and populate user and place details
+    //  post ID & populate user and place details
     const post = await Posts.findById(post_id) 
     .populate({
       path: 'user_id',
@@ -241,7 +240,6 @@ const getPostDetails = async (req, res, next) => {
       })
     );
 
-    // Add the signed URLs to the post
     post.signedPhotoUrls = photosWithSignedUrls;
 
     res.status(200).json({
@@ -257,9 +255,8 @@ const getPostDetails = async (req, res, next) => {
 
 const likePost = async (req, res) => {
   try {
-    const { id } = req.params; // Post ID
-    // const { user_id } = req.body; // User ID
-    const {user_id} = req.user;
+    const { id } = req.params; 
+    const { user_id } = req.user;  
 
     const post = await Posts.findById(id);
 
@@ -267,47 +264,20 @@ const likePost = async (req, res) => {
       return res.status(404).json({ error: 'Post not found' });
     }
 
-    // Find the index of the user in the likes array
-    const indexToRemove = post.likes.findIndex((like) => like.equals(user_id));
-    if (indexToRemove!==-1) {
-       // User has already liked the post, unlike it
-       // Use slice and concat to create a new array without the user at the found index
-       post.likes = post.likes.slice(0, indexToRemove).concat(post.likes.slice(indexToRemove + 1));
-       //save the post
-       const updatedPost = await post.save();
-      //inform the client side that the post is unliked without any problem
-      return res.status(200).json({ message: 'Post unliked successfully.',updatedPost })
-    } else {
-      //find the user who is liking the posts to send a notification
-      const user = await Users.findById(user_id);
-      
-      if(!user){
-        res.status(404).json({error:"User not found"})
-      }
-      else{
-        // User hasn't liked the post, like it
-        post.likes.push(user_id);
-        const updatedPost = await post.save();
-        //creating the notification
-        const notification = {
-        user_id: post.user_id,
-        sender_id: user_id,
-        type: 'like',
-        content: `${user.userName} a aimé votre post.`,
-      };
-      await Notifications.create(notification);
-      
-      //testing if the user is connecting to the socket server so we can send him the notification in real time
-      const recipientSocket = io.sockets.sockets[post.user_id];
-    
-      if (recipientSocket) {
-        //sending a notification post,user,notification 
-        recipientSocket.emit('likepost', {updatedPost,user,notification});
-      }
-      res.status(201).json({ message: 'post is liked successfully.'})
-      }
+    // Check if the user has already liked the post
+    const isLiked = post.likes.includes(user_id);
 
+    if (isLiked) {
+      // User has already liked the post, unlike it
+      post.likes = post.likes.filter((like) => like !== user_id);
+    } else {
+      // User hasn't liked the post, like it
+      post.likes.push(user_id);
     }
+
+    const updatedPost = await post.save();
+
+    res.json(updatedPost);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -329,50 +299,25 @@ const addComment = async (req, res) => {
       return res.status(404).json({ error: 'Post not found' });
     }
 
-    const user = await Users.findById(user_id);
+    const newComment = new Comments({
+      user_id,
+      post_id,
+      content,
+    });
 
-    if(!user){
-      res.status(404).json({error:"User not found."})
-    }
-    else{
-        // Create a new comment
-        const newComment = new Comments({
-          user_id,
-          post_id,
-          content,
-        });
-        
-        // Save the comment to the database
-        const savedComment = await newComment.save();
+    // Save the comment to the database
+    const savedComment = await newComment.save();
 
-        // Add the comment to the post's comments array
-        post.comments.push(savedComment._id);
-        await post.save();
+    // Add the comment to the post's comments array
+    post.Comments.push(savedComment._id);
+    await post.save();
 
-        //creating the notification
-        const notification = {
-        user_id: post.user_id,
-        sender_id: user_id,
-        type: 'comment',
-        content: `${user.userName} a commenté votre post.`,
-      };
-      await Notifications.create(notification);
-      
-      //testing if the user is connecting to the socket server so we can send him the notification in real time
-      const recipientSocket = io.sockets.sockets[post.user_id];
-      
-      if (recipientSocket) {
-         //sending a notification post,user,notification 
-         recipientSocket.emit('commentpost', {post,user,notification,savedComment});
-       }
-       res.status(201).json({ message: 'a post commented successfully.'})
-    }
+    res.json(savedComment);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
 const deleteComment = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -413,6 +358,7 @@ const deleteComment = async (req, res) => {
 
 
 
+
 export { 
   getPosts , 
   createPost,
@@ -422,5 +368,5 @@ export {
   getPostDetails,
   likePost,
   addComment,
-  deleteComment 
+  deleteComment
 };

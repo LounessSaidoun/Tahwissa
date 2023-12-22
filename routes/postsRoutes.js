@@ -21,11 +21,11 @@ router.get('/', getPosts);
 //create a new post 
 router.post('/create' , userAuth , upload.array('photos', 3), createPost);
 //updating a post
-router.put('/:id/update' ,upload.array('photos', 3), updatePost);
+router.put('/:id/update' ,userAuth , upload.array('photos', 3), updatePost);
 //deleting a post
-router.delete('/:id/delete',deletePost);
+router.delete('/:id/delete',userAuth , deletePost);
 //getting the post's detilas 
-router.get('/:post_id/details',getPostDetails)
+router.get('/:post_id/details',userAuth,getPostDetails)
 //to like a certain post
 router.post("/like/:id" , userAuth ,likePost);
 //to add a comment

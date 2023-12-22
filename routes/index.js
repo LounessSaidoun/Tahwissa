@@ -12,6 +12,6 @@ router.use("/auth",authRoute);
 router.use("/users",userRoute);
 router.use("/friend-request",friendRequestRoute)
 router.use("/notification",notifactionRoutes);
-router.use("/post",postRoutes);
-router.use("/article",articleRoutes)
+router.use("/posts",postRoutes);
+router.use("/articles",articleRoutes)
 export default router;
