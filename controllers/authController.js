@@ -13,7 +13,7 @@ export const register = async (req,res,next)=>{
     const {userName,firstName,lastName,email,password,birthDate} = req.body
 
 
-    if(!(userName || firstName || lastName || email || password || birthDate )){ //we have to add the birthDay so we can calculate age dynamicly
+    if(!(userName || firstName || lastName || email || password || birthDate )){ 
         next("veuillez remplir les champs indiqué!");
         return;
     }
