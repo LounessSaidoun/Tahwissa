@@ -109,8 +109,52 @@ const addArticle = async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };
-  
 
+
+  const modifyArticle= async (req, res) => {
+    try {
+      const articleId = req.params.id; // Assuming you're passing the article ID in the request parameters
+  
+      const files = req.files;
+      if (!files || !Array.isArray(files)) {
+        return res.status(400).json({ error: 'No files provided or invalid files format' });
+      }
+  
+      const existingArticle = await Articles.findById(articleId);
+      if (!existingArticle) {
+        return res.status(404).json({ error: 'Article not found' });
+      }
+  
+      const imageUrls = await Promise.all(
+        files.map(async (file) => {
+          const params = {
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: `uploads/${Date.now()}-${file.originalname}`,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+          };
+  
+          const s3Response = await s3.upload(params).promise();
+          return s3Response.Location;
+        })
+      );
+  
+      // Merge existing photos with new ones
+      const updatedPhotos = [...existingArticle.photos, ...imageUrls];
+  
+      // Update only the 'photos' field of the article
+      existingArticle.photos = updatedPhotos;
+  
+      const savedArticle = await existingArticle.save();
+  
+      res.json(savedArticle);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  };
+  
+  
 const likeArticle = async (req, res) => {
     const { id } = req.params;
     const { user_id } = req.user; // Assuming you have a user object in your request
@@ -155,4 +199,4 @@ const likeArticle = async (req, res) => {
 };
 
 
-export { likeArticle , getArticles ,addArticle,getArticleDetail};
+export { likeArticle , getArticles ,addArticle,getArticleDetail , modifyArticle};

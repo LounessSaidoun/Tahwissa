@@ -26,7 +26,7 @@ const articleSchema = new mongoose.Schema(
           type: {
             type: String,
             required: true,
-            enum: ['art', 'restaurant', 'place','experience'],
+            enum: ['art', 'Restaurant', 'place','experience'],
           },
           likes: [{
             type: mongoose.Schema.Types.ObjectId,
