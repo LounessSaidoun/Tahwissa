@@ -28,7 +28,9 @@ router.get("/verified",(req,res)=>{
 router.get("/resetpassword",(req,res)=>{
     res.sendFile(path.join(__dirname,"views", "verifiedpage.html"))
 })
+
 router.patch("/update-profile",userAuth,upload.single('profil_picture'),updateProfilInformations)
+
 router.get("/profil/:userId",getProfilInfo)
 
 //router.delete("/delete-account",deleteAccount);

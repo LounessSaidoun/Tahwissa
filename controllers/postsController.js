@@ -233,7 +233,7 @@ const getPostDetails = async (req, res, next) => {
         const signedUrl = await s3.getSignedUrlPromise('getObject', {
           Bucket: process.env.AWS_S3_BUCKET_NAME,
           Key: photo,
-          Expires: 3600, // Set the expiration time for the signed URL
+          Expires: 3600, 
         });
 
         return signedUrl;

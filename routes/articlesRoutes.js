@@ -1,5 +1,5 @@
 import express from 'express';
-import { getArticles, getArticleDetail ,addArticle,likeArticle} from '../controllers/articlesController.js';
+import { getArticles, getArticleDetail ,addArticle,likeArticle , modifyArticle} from '../controllers/articlesController.js';
 import userAuth from '../middleware/authmiddleware.js'
 
 import multer from 'multer';
@@ -17,6 +17,8 @@ router.get('/', getArticles);
 router.get('/:id', getArticleDetail);
 //liking an article only if you are authorized
 router.post('/like/:id' ,userAuth,likeArticle );
+router.patch('/modify/:id', upload.array('photos'), modifyArticle);
+
 
 
 
