@@ -57,7 +57,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use(
     cors(
     {
-        origin: process.env.APP_URL,
+        origin: process.env.ORIGIN_URL,
         methods:"GET,POST,PUT,DELETE",
         credentials: true
     })
